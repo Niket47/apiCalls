@@ -2,27 +2,19 @@ import axios from 'axios';
 import { BASE_URL } from './endpoints';
 import { getData } from './globalFunctions';
 
-
-const makeApiCall = async (method, endpoint, data, headers = {}, isFormData = false) => {
+const makeApiCall = async (method, endpoint, data, headers = {}) => {
     const apiUrl = BASE_URL + endpoint;
     try {
         const key = 'token';
         const token = await getData(key);
+        console.log(token, "token--------------------------------")
         const response = await axios({
             method: method,
             url: apiUrl,
             headers: {
-                // 'Content-Type': 'application/json',
+                'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}`,
                 ...headers,
-                ...(isFormData && {
-                    'Accept': 'application/json',
-                    'Content-Type': 'multipart/form-data',
-                    'Access-Control-Allow-Origin': '*',
-                    'Access-Control-Allow-Methods': 'POST',
-                    'Access-Control-Allow-Headers': 'content-type, authorization',
-                    'Access-Control-Allow-Credentials': 'true',
-                }),
             },
             data: data,
         });
@@ -33,9 +25,47 @@ const makeApiCall = async (method, endpoint, data, headers = {}, isFormData = fa
     }
 };
 
+const makeFormDataCall = async (method, endpoint, data, headers = {}) => {
+    const apiUrl = BASE_URL + endpoint;
+    try {
+        const key = 'token';
+        const token = await getData(key);
+        console.log(token, "token--------------------------------")
+        const response = await axios({
+            method: method,
+            url: apiUrl,
+            data: data,
+            headers: {
+                'Content-Type': 'multipart/form-data',
+                'Accept': 'application/json',
+                'Authorization': `Bearer ${token}`,
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Methods': 'POST',
+                'Access-Control-Allow-Headers': 'content-type, authorization',
+                'Access-Control-Allow-Credentials': 'true',
+                ...headers,
+            },
+        });
+        return response.data;
+    } catch (error) {
+        console.log(error.response, "------makeFormDataCall")
+        return error;
+    }
+};
 
-export const login = async (formData) => {
-    return makeApiCall('post', '/api/auth/signup', formData, {}, true);
+
+
+export const login = async credentials => {
+    return makeApiCall('post', '/api/auth/sendOtp', { mobileNumber: credentials });
+};
+
+export const verifyOtp = async data => {
+    return makeApiCall('post', '/api/auth/verifyOtp', data);
+};
+
+export const getLoginUserData = async (data) => {
+    console.log(data, "formData----------------")
+    return makeFormDataCall('post', '/api/auth/signup', data,);
 };
 
 export const signUp = async (credentials) => {
@@ -77,8 +107,3 @@ export const updateProduct = async (productId, updatedData) => {
 export const patchProduct = async (productId, patchedData) => {
     return makeApiCall('patch', `/products/${productId}`, patchedData);
 };
-
-
-export const verifyOtp = async (data) => {
-    return makeApiCall('post', '/api/auth/verifyOtp', data)
-}
