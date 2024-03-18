@@ -112,11 +112,13 @@ import { getData } from './globalFunctions';
 
 const BASE_URL = "https://api.escuelajs.co"
 
-const prepareHeader = (isFormData = false, accessToken) => {
+
+const prepareHeader = (isFormData = false, accessToken, customHeaders = {}) => {
     const requestHeader = {
         headers: {
             Accept: 'application/json',
             Authorization: accessToken,
+            ...customHeaders
         }
     };
     if (isFormData) {
@@ -127,12 +129,12 @@ const prepareHeader = (isFormData = false, accessToken) => {
     return requestHeader
 }
 
-const makeApiCall = async (method, endpoint, data, isFormData = false) => {
+const makeApiCall = async (method, endpoint, data, isFormData = false, customHeaders = {}) => {
     const apiUrl = BASE_URL + endpoint;
     try {
         const key = 'token';
         const token = await getData(key);
-        const headers = prepareHeader(isFormData, `Bearer ${token}`);
+        const headers = prepareHeader(isFormData, `Bearer ${token}`, customHeaders);
 
         const response = await axios({
             method: method,
@@ -146,6 +148,7 @@ const makeApiCall = async (method, endpoint, data, isFormData = false) => {
         return error;
     }
 };
+
 
 
 export const loginCall = async (credentials) => {
