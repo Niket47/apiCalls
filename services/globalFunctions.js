@@ -1,7 +1,8 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-// import { PermissionsAndroid } from "react-native";
-import { PermissionsAndroid, Platform } from "react-native";
-import Geolocation from 'react-native-geolocation-service';
+
+
+
+
 
 export const storeData = async (key, value) => {
     try {
@@ -10,6 +11,8 @@ export const storeData = async (key, value) => {
         console.log(error)
     }
 };
+
+
 
 export const getData = async (key) => {
     try {
@@ -23,95 +26,41 @@ export const getData = async (key) => {
 
 
 
-export const requestLocationPermission = async () => {
+
+import { Alert, PermissionsAndroid } from 'react-native';
+import RNFetchBlob from 'rn-fetch-blob'
+import CameraRoll from "@react-native-camera-roll/camera-roll"
+
+export const saveImageToGallery = async (base64Image) => {
     try {
         const granted = await PermissionsAndroid.request(
-            PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+            PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE,
             {
-                title: 'Cool Photo App Location Permission',
-                message:
-                    'Cool Photo App needs access to your location ' +
-                    'so you can find nearby places.',
-                buttonNeutral: 'Ask Me Later',
-                buttonNegative: 'Cancel',
+                title: 'Permission to save image',
+                message: 'This app needs access to your storage to save the image.',
                 buttonPositive: 'OK',
-            },
+            }
         );
+
         if (granted === PermissionsAndroid.RESULTS.GRANTED) {
-            console.log('You can use the location');
+            const dirs = RNFetchBlob.fs.dirs;
+            const imagePath = `${dirs.CacheDir}/${Date.now()}.jpg`;
+
+            // Convert base64 to a binary blob
+            const imageBlob = RNFetchBlob.base64.encode(base64Image);
+
+            // Write the blob to a file
+            await RNFetchBlob.fs.writeFile(imagePath, imageBlob, 'base64');
+
+            // Save the file to the gallery
+            await CameraRoll.save(imagePath, { type: 'photo' });
+
+            Alert.alert('Success', 'Image saved successfully');
         } else {
-            console.log('Location permission denied');
+            Alert.alert('Permission Denied', 'Cannot save image without permission');
         }
-    } catch (err) {
-        console.warn(err);
+    } catch (error) {
+        console.error('Failed to save image: ', error);
+        Alert.alert('Error', 'Failed to save image');
     }
 };
-
-
-
-
-
-export const getCurrentLocation = () =>
-    new Promise((resolve, reject) => {
-        Geolocation.getCurrentPosition(
-            position => {
-                const cords = {
-                    latitude: position.coords.latitude,
-                    longitude: position.coords.longitude,
-                    heading: position?.coords?.heading,
-                };
-                console
-                resolve(cords);
-            },
-            error => {
-                reject(error.message);
-            },
-            { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 },
-        )
-    })
-
-export const locationPermission = () => new Promise(async (resolve, reject) => {
-    if (Platform.OS === 'ios') {
-        try {
-            const permissionStatus = await Geolocation.requestAuthorization('whenInUse');
-            if (permissionStatus === 'granted') {
-                return resolve("granted");
-            }
-            reject('Permission not granted');
-        } catch (error) {
-            return reject(error);
-        }
-    }
-    return PermissionsAndroid.request(
-        PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
-    ).then((granted) => {
-        if (granted === PermissionsAndroid.RESULTS.GRANTED) {
-            resolve("granted");
-        }
-        return reject('Location Permission denied');
-    }).catch((error) => {
-        console.log('Ask Location permission error: ', error);
-        return reject(error);
-    });
-});
-
-const showError = (message) => {
-    showMessage({
-        message,
-        type: 'danger',
-        icon: 'danger'
-    })
-}
-
-const showSuccess = (message) => {
-    showMessage({
-        message,
-        type: 'success',
-        icon: 'success'
-    })
-}
-
-export {
-    showError,
-    showSuccess
-}
